@@ -2,15 +2,28 @@ const express = require('express')
 const app = express()
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const port = process.env.PORT || 5000;
 
 app.use(cors())
 app.use(express.json())
 
+const  verifyJwt = (req,res,next) => {
+  const authorization = req.headers.authorization;
+    if(!authorization) {
+      return res.status(401).send({error: true, message: 'not verify parson'})
+    }
+    const token = authorization.split(' ')[1];
+    jwt.verify(token,process.env.DB_TOKEN,(err,decoded) => {
+      if(err) {
+        return res.status(401).send({error: true, massage: 'not verify parson'})
+      }
+      req.decoded = decoded;
+      next()
+    })
 
-console.log(process.env.DB_USER)
-
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qygdymi.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -49,11 +62,15 @@ async function run() {
       const result = await cartCollection.insertOne(item);
       res.send(result)
     })
-    app.get('/carts',async(req,res)=> {
-        const email = req.query.email;
+    app.get('/carts',verifyJwt, async(req,res)=> {
+        const email = req.query.email
         if(!email){
           res.send([]);
         }
+        const decoded = req.decoded.email;
+        if(email !== decoded){
+          return res.status(403).send({error: true, message: 'right access'})
+        } 
         const query = {email: email};
         const result = await cartCollection.find(query).toArray();
         res.send(result);
@@ -93,6 +110,24 @@ async function run() {
       const result = await parsonCollection.updateOne(filter,updateRole);
       res.send(result);
     })
+
+    app.get('/parson/admin/:email',verifyJwt, async(req,res)=> {
+        const email = req.params.email;
+        if(req.decoded.email !== email) {
+          res.send({admin: false})
+        }
+        const query = {email: email}
+        const  user = await parsonCollection.findOne(query);
+        const result = {admin: user?.role == 'admin'}
+        res.send(result)
+    })
+
+    app.post('/jwt', (req , res) => {
+      const user = req.body
+      const token = jwt.sign(user, process.env.DB_TOKEN, {expiresIn: '1h'})
+      res.send(token)
+    })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
