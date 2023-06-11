@@ -111,6 +111,20 @@ async function run() {
       res.send(result);
     })
 
+    app.patch('/parson/instructor/:id',async(req,res)=> {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updateRole = {
+          $set: {
+            role: 'instructor'
+          },
+      };
+
+      const result = await parsonCollection.updateOne(filter,updateRole);
+      res.send(result);
+    })
+
+
     app.get('/parson/admin/:email',verifyJwt, async(req,res)=> {
         const email = req.params.email;
         if(req.decoded.email !== email) {
@@ -121,6 +135,17 @@ async function run() {
         const result = {admin: user?.role == 'admin'}
         res.send(result)
     })
+
+    app.get('/parson/instructor/:email',verifyJwt, async(req,res)=> {
+      const email = req.params.email;
+      if(req.decoded.email !== email) {
+        res.send({instructor: false})
+      }
+      const query = {email: email}
+      const  user = await parsonCollection.findOne(query);
+      const result = {instructor: user?.role == 'instructor'}
+      res.send(result)
+  })
 
     app.post('/jwt', (req , res) => {
       const user = req.body
