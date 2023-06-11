@@ -1,8 +1,8 @@
 const express = require('express')
 const app = express()
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const cors = require('cors')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const cors = require('cors');
 const port = process.env.PORT || 5000;
 
 app.use(cors())
@@ -30,7 +30,7 @@ async function run() {
     const teacherCollection = client.db('allSchool').collection('teacher');
     const allClassCollection = client.db('allSchool').collection('classes');
     const cartCollection = client.db('allSchool').collection('carts');
-    
+    const parsonCollection = client.db('allSchool').collection('parson');
 
     app.get('/teacher', async(req,res)=>{
       const cursor = teacherCollection.find();
@@ -57,6 +57,41 @@ async function run() {
         const query = {email: email};
         const result = await cartCollection.find(query).toArray();
         res.send(result);
+    })
+    app.delete('/carts/:id', async (req,res)=> {
+        const id = req.params.id;
+        const query = {_id: new ObjectId (id)};
+        const result = await cartCollection.deleteOne(query);
+        res.send(result)
+    })
+
+    app.post('/parson',async (req,res)=> {
+      const user = req.body;
+      const query= {email: user.email}
+      const findUser = await parsonCollection.findOne(query);
+      if(findUser){
+        return res.send({massage: 'already have a account'})
+      }
+      const result = await parsonCollection.insertOne(user);
+      res.send(result)
+    })
+
+    app.get('/parson', async (req,res) => {
+      const result = await parsonCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.patch('/parson/admin/:id',async(req,res)=> {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updateRole = {
+          $set: {
+            role: 'admin'
+          },
+      };
+
+      const result = await parsonCollection.updateOne(filter,updateRole);
+      res.send(result);
     })
 
     await client.db("admin").command({ ping: 1 });
