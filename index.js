@@ -175,13 +175,14 @@ async function run() {
 
      app.post('/payments',verifyJwt,async(req,res)=> {
         const payment = req.body;
-        const insertResult = await paymentsCollection.insertOne(payment)
+        const insertResult = await paymentsCollection.insertOne(payment);
         res.send(insertResult);
      })
 
-
-
-
+     app.get('/payments', async (req,res) => {
+      const result = await paymentsCollection.find().toArray();
+      res.send(result)
+    })
 
 
     await client.db("admin").command({ ping: 1 });
@@ -204,8 +205,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
-
-
-// assignment-12
-
-// LXFyCPE0ypGYayT9
