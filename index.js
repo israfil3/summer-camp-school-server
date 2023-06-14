@@ -179,9 +179,11 @@ async function run() {
         res.send(insertResult);
      })
 
-     app.get('/payments', async (req,res) => {
-      const result = await paymentsCollection.find().toArray();
-      res.send(result)
+     app.get('/payments/:email', verifyJwt, async (req,res) => {
+      const email = req.params.email;
+      const filter ={email: email}
+      const result = await paymentsCollection.find(filter).toArray();
+      res.send(result) 
     })
 
 
@@ -194,9 +196,6 @@ async function run() {
 run().catch(console.dir);
 
 
-
-
-
 // not a vaild code here
 app.get('/', (req, res) => {
   res.send('Hello World!bd')
@@ -205,3 +204,5 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
+
+
